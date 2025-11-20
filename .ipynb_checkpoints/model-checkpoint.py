@@ -26,9 +26,11 @@ if __name__ == '__main__':
 
     ans_list, ans_dict  = scraper.create_basket('Answer_occurences.csv',5,20000)
 
+    print(datetime.now())
     count = 1
     X_list = []
     y_list = []
+    '''
     for i in range(0,5):#len(qa_clean)):
         if qa_clean.loc[i,"answer"] in ans_list:
             tempVector = []
@@ -38,6 +40,22 @@ if __name__ == '__main__':
                     tempVector.append(1)
                 else:
                     tempVector.append(0)
+            X_list.append(tempVector)
+            y_list.append(ans_list.index(qa_clean.loc[i,"answer"]))
+            print(count)
+            count+=1
+
+    '''
+    print (len(basket))
+    
+    for i in range(0,5):#len(qa_clean)):
+        if qa_clean.loc[i,"answer"] in ans_list:
+            tempVector = np.zeros(len(basket)).tolist()
+            for word in qa_clean.loc[i,"question"].split():
+                #print(word)
+                if word in basket:
+                    tempVector[basket.index(word)] = 1
+                    
             X_list.append(tempVector)
             y_list.append(ans_list.index(qa_clean.loc[i,"answer"]))
             print(count)
@@ -53,17 +71,17 @@ if __name__ == '__main__':
                 print(basket[b], end = ", ")
         print("Y: "+str(ans_list[a]))
 
-'''
-This is the output:
-
-X: arrest, theory, u, ali, leo, hi, e, g, p, f, ear, ears, le, d, po, o, w, y, rest, al, s, sing, r, h, m, si, ma, un, las, n, t, ho, der, sin, l, il, lil, ye, er, Y: copernicus 
-X: 1912, football, seasons, ball, foot, ed, e, p, 19, f, le, d, o, w, y, al, sons, season, s, b, r, h, m, n, t, ho, tar, v, ian, wit, ts, l, seas, di, ba, pi, isle, ants, ol, ant, ave, ia, Y: jim thorpe
-X: average, hours, sunshine, suns, u, hi, e, ours, shine, g, f, cord, ear, hour, d, o, y, s, co, r, h, m, ma, un, 55, ate, n, t, ho, rage, ha, v, era, 0, ye, ave, er, Y: arizona 
-X: 1963, burger, u, pan, let, 63, ed, hi, ill, e, g, p, 19, le, billion, d, o, w, y, et, s, co, ive, b, r, h, pa, m, ny, iv, n, t, ho, k, v, ts, l, il, lion, 96, serve, ink, er, Y: mcdonalds
-X: u, ted, ed, e, sec, g, p, f, d, o, s, co, r, h, m, si, frame, en, ate, resident, n, t, id, con, ram, er, Y: john adams
-
-*** something is wrong with basket
-'''
+    '''
+    This is the output:
+    
+    X: arrest, theory, u, ali, leo, hi, e, g, p, f, ear, ears, le, d, po, o, w, y, rest, al, s, sing, r, h, m, si, ma, un, las, n, t, ho, der, sin, l, il, lil, ye, er, Y: copernicus 
+    X: 1912, football, seasons, ball, foot, ed, e, p, 19, f, le, d, o, w, y, al, sons, season, s, b, r, h, m, n, t, ho, tar, v, ian, wit, ts, l, seas, di, ba, pi, isle, ants, ol, ant, ave, ia, Y: jim thorpe
+    X: average, hours, sunshine, suns, u, hi, e, ours, shine, g, f, cord, ear, hour, d, o, y, s, co, r, h, m, ma, un, 55, ate, n, t, ho, rage, ha, v, era, 0, ye, ave, er, Y: arizona 
+    X: 1963, burger, u, pan, let, 63, ed, hi, ill, e, g, p, 19, le, billion, d, o, w, y, et, s, co, ive, b, r, h, pa, m, ny, iv, n, t, ho, k, v, ts, l, il, lion, 96, serve, ink, er, Y: mcdonalds
+    X: u, ted, ed, e, sec, g, p, f, d, o, s, co, r, h, m, si, frame, en, ate, resident, n, t, id, con, ram, er, Y: john adams
+    
+    *** something is wrong with basket
+    '''
         
     
     #print(np.array(y_list))

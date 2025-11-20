@@ -79,7 +79,8 @@ def create_basket (fname, low_bound, up_bound):
         
         for row in reader:
             #we don't want to worry about words that are very uncommon and also words that are so common they are in almost every question
-            if int(row[1]) > low_bound and int(row[1]) < up_bound :
+            #we can just worry about words of length > 2; in future we see about accounting for subwords
+            if int(row[1]) > low_bound and int(row[1]) < up_bound and len(str(row[0])) > 2 :
                 basket_list.append(row[0])
                 output_dict[row[0]] = int(row[1])
 
