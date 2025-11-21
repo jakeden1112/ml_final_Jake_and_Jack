@@ -48,7 +48,13 @@ We load in the Huggingface dataset and then make qa, which is a dataframe of jus
 
 ## How does it look?
 
-We have been tweaking the amount of data used as well as the k value. We have been getting accuracy levels that are pretty low, but that is to be expected when we are using such a simple model on such a hard problem.
+We have been tweaking the amount of data used as well as the k value. We have been getting accuracy levels that are pretty low, but that is to be expected when we are using such a simple model on such a hard problem. 
+
+As expected, increasing the k value decreases the accuracy. Jeopardy questions and answers are very imbalanced/unique. 
+
+using 20000 samples and a k of 1 Accuracy: 0.0375 
+using 20000 samples and a k of 2 Accuracy: 0.02075
+using 20000 samples and a k of 3 Accuracy: 0.01975
 
 ## What's next?
 
