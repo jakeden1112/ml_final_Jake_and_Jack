@@ -10,8 +10,9 @@ def hf_dataframe():
     return df
 
 
-#adapted from google's ai response
+
 def cleaner(text):
+    #adapted from google's ai response
     clean = re.sub(r'[^\w\s]', '', str(text))
     clean = clean.lower()
     clean = clean.replace('  ', ' ')
@@ -20,15 +21,7 @@ def cleaner(text):
     return clean
 
 
-def answer_dict_maker(df, column):
-    answerDict = {}
-    for col in range(df[column].count()):
-        temp = df.loc[col,column]
-        if temp in answerDict:
-            answerDict[temp]+=1
-        else:
-            answerDict[temp]=1
-    return answerDict
+
 
 
 def occ_dict_maker (df, column):
@@ -59,7 +52,15 @@ def occ_dict_maker (df, column):
 
     return occDict
 
-
+def answer_dict_maker(df, column):
+    answerDict = {}
+    for col in range(df[column].count()):
+        temp = df.loc[col,column]
+        if temp in answerDict:
+            answerDict[temp]+=1
+        else:
+            answerDict[temp]=1
+    return answerDict
 
 #save the dictionary to a csv so we don't have to make it everytime
 def dict_to_csv (occ_dict, fname):
@@ -79,15 +80,43 @@ def create_basket (fname, low_bound, up_bound):
         
         for row in reader:
             #we don't want to worry about words that are very uncommon and also words that are so common they are in almost every question
-            #we can just worry about words of length > 2; in future we see about accounting for subwords
+            #we can just worry about words of length > 2
             if int(row[1]) > low_bound and int(row[1]) < up_bound and len(str(row[0])) > 2 :
                 basket_list.append(row[0])
                 output_dict[row[0]] = int(row[1])
 
         return basket_list, output_dict
 
+def find_good_questions(df, ans_list, fname):
+    q_list = []
+    with open(fname, 'w', newline = '', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(["question number"])
+        for i in range(0,len(df)):
+            if df.loc[i,"answer"] in ans_list:
+                writer.writerow([i])
+                q_list.append(i)
+                print (i)
+
+    
+
+    return q_list
+
+def retrieve_good_qs(fname):
+    good_qs = []
+    with open(fname, 'r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        next(reader)
+        for row in reader:
+            good_qs.append(row[0])
+
+    return good_qs
+            
+
 if __name__ == '__main__':
 
+
+    '''
     df = hf_dataframe()
 
     print(df['answer'].count())
@@ -119,7 +148,10 @@ if __name__ == '__main__':
     print(len(test_dict))
     print(len(basket))
     
-    '''
+
+    
+    
+    
     #occ_dict = occ_dict_maker(qa_clean,'question')
     #print(occ_dict)
     

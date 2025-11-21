@@ -22,87 +22,70 @@ if __name__ == '__main__':
         
     #occ_dict = scraper.occ_dict_maker(qa_clean,'question')
     
-    basket, word_dict  = scraper.create_basket('word_occurences.csv',30,500)
+    basket, word_dict  = scraper.create_basket('word_occurences.csv',20,1000)
 
-    ans_list, ans_dict  = scraper.create_basket('Answer_occurences.csv',5,20000)
+    ans_list, ans_dict  = scraper.create_basket('Answer_occurences.csv',10,20000)
 
-    print(datetime.now())
+    #scraper.find_good_questions(qa_clean, ans_list, 'good_questions.csv')
+
+    good_qs = scraper.retrieve_good_qs('good_questions.csv')
+
+    #print(good_qs)
+    
+    #print(datetime.now())
     count = 1
     X_list = []
     y_list = []
-    '''
-    for i in range(0,5):#len(qa_clean)):
-        if qa_clean.loc[i,"answer"] in ans_list:
-            tempVector = []
-            for j in range(0,len(basket)):
-                #something fishy here
-                if str(basket[j]) in qa.loc[i,"question"]:
-                    tempVector.append(1)
-                else:
-                    tempVector.append(0)
-            X_list.append(tempVector)
-            y_list.append(ans_list.index(qa_clean.loc[i,"answer"]))
-            print(count)
-            count+=1
-
-    '''
-    print (len(basket))
     
-    for i in range(0,5):#len(qa_clean)):
-        if qa_clean.loc[i,"answer"] in ans_list:
-            tempVector = np.zeros(len(basket)).tolist()
-            for word in qa_clean.loc[i,"question"].split():
-                #print(word)
-                if word in basket:
-                    tempVector[basket.index(word)] = 1
-                    
-            X_list.append(tempVector)
-            y_list.append(ans_list.index(qa_clean.loc[i,"answer"]))
-            print(count)
-            count+=1
-            
+    #print (len(basket))
+    #print(len(ans_list))
+
+    num_qs = 20000
+    
+    #goes through each question and makes an X vector using one hot encoding and a Y vector, which has a number represent the answer
+    for i in good_qs[0:num_qs]:
+        
+        tempVector = np.zeros(len(basket)).tolist()
+        for word in qa_clean.loc[int(i),"question"].split():
+            #print(word)
+            if word in basket:
+                tempVector[basket.index(word)] = 1
+                
+        X_list.append(tempVector)
+        y_list.append(ans_list.index(qa_clean.loc[int(i),"answer"]))
+        #print(count)
+        #count+=1
+       
     X = np.array(X_list)
     y = np.array(y_list)
+    
+    #for ans in y:
+        #print(ans_list[ans])
 
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    k = 1
+    
+    knn = KNeighborsClassifier(n_neighbors=k)
+
+    knn.fit(X_train, y_train)
+
+    y_pred = knn.predict(X_test)
+
+    #print(y_pred)
+    
+    '''
     for a in range(0,len(X_list)):
         print("X:", end = " ")
         for b in range(0,len(X_list[a])):
             if X_list[a][b] == 1:
                 print(basket[b], end = ", ")
         print("Y: "+str(ans_list[a]))
-
     '''
-    This is the output:
-    
-    X: arrest, theory, u, ali, leo, hi, e, g, p, f, ear, ears, le, d, po, o, w, y, rest, al, s, sing, r, h, m, si, ma, un, las, n, t, ho, der, sin, l, il, lil, ye, er, Y: copernicus 
-    X: 1912, football, seasons, ball, foot, ed, e, p, 19, f, le, d, o, w, y, al, sons, season, s, b, r, h, m, n, t, ho, tar, v, ian, wit, ts, l, seas, di, ba, pi, isle, ants, ol, ant, ave, ia, Y: jim thorpe
-    X: average, hours, sunshine, suns, u, hi, e, ours, shine, g, f, cord, ear, hour, d, o, y, s, co, r, h, m, ma, un, 55, ate, n, t, ho, rage, ha, v, era, 0, ye, ave, er, Y: arizona 
-    X: 1963, burger, u, pan, let, 63, ed, hi, ill, e, g, p, 19, le, billion, d, o, w, y, et, s, co, ive, b, r, h, pa, m, ny, iv, n, t, ho, k, v, ts, l, il, lion, 96, serve, ink, er, Y: mcdonalds
-    X: u, ted, ed, e, sec, g, p, f, d, o, s, co, r, h, m, si, frame, en, ate, resident, n, t, id, con, ram, er, Y: john adams
-    
-    *** something is wrong with basket
-    '''
-        
-    
-    #print(np.array(y_list))
-
-    #for ans in y:
-        #print(ans_list[ans])
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    knn = KNeighborsClassifier(n_neighbors=1)
-
-    knn.fit(X_train, y_train)
-
-    y_pred = knn.predict(X_test)
-
-    print(y_pred)
-
-    
-    
+    print("using "+str(num_qs)+" samples and a k of " +str(k))
     print("Accuracy:", accuracy_score(y_test, y_pred))
 
     
     print(datetime.now())    
     print("done")
+    
