@@ -1,5 +1,15 @@
 # ml_final_Jake_and_Jack
 
+## Project roadmap going forward
+
+-Find existing NLP classification models that will allow us to sort questions and answers into predefined categories. 
+-apply different models (possibly BERT), make sure to cite sources of models 
+-Be able to have model answer SOME questions.
+
+meeting notes
+-online tutorials for fine tuning bert
+- 
+
 ## Goal for first milestone
 
 Note: We will refer to what the host reads as the question and what the contestant says in response as the answer to avoid confusion
