@@ -1,6 +1,10 @@
 import pandas as pd
 import re
 import csv
+import requests 
+import time
+
+
 '''
 For our first step, we will be using a preexisting dataset from hf, which we will simplify and make the model able to work with it
 Later on, we plan to create our own custom dataset that will have more questions (hf one only has half of questions asked)
@@ -111,11 +115,79 @@ def retrieve_good_qs(fname):
             good_qs.append(row[0])
 
     return good_qs
+
+def get_page_contents(page_name):
+    page = requests.get(page_name)
+    return page.text
+
+def page_scraper(page_name):
+    page_text = get_page_contents(page_name)
+    with open('new_dataset.csv', 'w', newline='', encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["show #", "airdate","round","category","value", "question","answer"])
+    
+        category_list = [] #always 6 long (for single and double, final is just 1 category)
+
+        #gets show # and airdate from the title of the html page
+        pos1 = page_text.find("<title>")
+        pos2 = page_text.find("</title>")
+        title = page_text[pos1:pos2]
+        pos1 = title.find("Show #")+6
+        show_num = title[pos1:pos1+4]
+        pos2 = title.find("aired ")+6
+        airdate = title[pos2:pos2+10]
+
+        #gets the list of categories for the first round
+        pos1 = page_text.find("jeopardy_round")
+        page_text = page_text[pos1:]
+        for i in range(6):
+            pos1 = page_text.find("category_name")+len("category_name")+2
+            page_text = page_text[pos1:]
+            pos2 = page_text.find("</td>")
+            category_list.append(page_text[:pos2])
+
+        for i in range(30):
+            pos1 = page_text.find("clue_value")+len("clue_value")+3
+            if(pos1 > page_text.find("clue_value_daily_double")):
+                pos1 = page_text.find("clue_value_daily_double")+len("clue_value_daily_double")+7
+            page_text = page_text[pos1:]
+            pos2 = page_text.find("</td>")
+            value = page_text[:pos2]
+            value = value.replace(',','')
+
+            pos1 = page_text.find("clue_text")+len("clue_text")+2
+            page_text = page_text[pos1:]
+            pos2 = page_text.find("</td>")
+            question = page_text[:pos2]
+            while "<a" in question:
+                pos1 = question.find("<a")
+                pos2 = question.find("_blank")+len("_blank")+2
+                question = question[:pos1] + question[pos2:]
+                question = question.replace('</a>','')    
+
+            pos1 = page_text.find("correct_response")+len("correct_response")+2
+            page_text = page_text[pos1:]
+            pos2 = page_text.find("</em>")
+            answer = page_text[:pos2]
+            while "<i>" in answer:
+                answer = answer.replace('<i>','') 
+            while "</i>" in answer:
+                answer = answer.replace('</i>','') 
+            while "\"" in answer:
+                answer = answer.replace('\"','') 
+
+            writer.writerow([show_num, airdate, "jeopardy", category_list[i%6], value , question, answer])
+
+            
+            
             
 
 if __name__ == '__main__':
 
 
+    page_scraper("https://j-archive.com/showgame.php?game_id=9322")
+    
+    
     '''
     df = hf_dataframe()
 
