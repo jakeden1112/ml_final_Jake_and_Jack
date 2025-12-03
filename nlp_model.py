@@ -8,6 +8,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from transformers import BertTokenizer
 
+#https://www.geeksforgeeks.org/nlp/explanation-of-bert-model-nlp/
+
 #import and apply bert to classify questions + answers from new_dataset.csv
 entries = pd.read_csv("new_dataset.csv")
 encoded_questions = []
