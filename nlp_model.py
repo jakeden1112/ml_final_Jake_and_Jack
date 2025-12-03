@@ -9,19 +9,27 @@ from sklearn.model_selection import train_test_split
 from transformers import BertTokenizer
 
 #import and apply bert to classify questions + answers from new_dataset.csv
-entries = open("new_dataset.csv", "r")
-    
-
+entries = pd.read_csv("new_dataset.csv")
+encoded_questions = []
+tokens_questions = []
 
 tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
-for i in range():
+
+for question in entries['question']:
     #encode every entry
     #text = ''
+    text = str(question)
+    
+    #encode text
+    encoding = tokenizer.encode(text, add_special_tokens=True)
+    
+    #add to encoded list
+    encoded_questions.append(encoding)
+    
+    tokens = tokenizer.convert_ids_to_tokens(encoding)
+    tokens_questions.append(tokens)
 
-# Tokenize and encode the text
-encoding = tokenizer.encode(text)
-print("Token IDs:", encoding)
+print(encoded_questions[1])
+print(tokens_questions[1])
 
-# Convert token IDs back to tokens
-tokens = tokenizer.convert_ids_to_tokens(encoding)
-print("Tokens:", tokens)
+
