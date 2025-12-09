@@ -3,7 +3,7 @@ import re
 import csv
 import requests 
 import time
-
+        
 
 '''
 For our first step, we will be using a preexisting dataset from hf, which we will simplify and make the model able to work with it
@@ -118,21 +118,31 @@ def retrieve_good_qs(fname):
 
 def get_page_contents(page_name):
     page = requests.get(page_name)
-    return page.text
+    print(page)
+    if(page.status_code == 200):
+        return page.text
+    else:
+        return -1
 
 def remove_html(text):
     while "<" in text or ">" in text:
         pos1 = text.find("<")
         pos2 = text.find(">")
         text = text[:pos1] + text[pos2+1:]
+        #print(text)
 
     while "&amp;" in text:
         text = text.replace('&amp;','&')
     return text
     
+def remove_spaces(text):
+    return text.replace(' ', '')
 
 def page_scraper(page_name):
     page_text = get_page_contents(page_name)
+    if page_text == -1:
+        return -1
+    
     with open('new_dataset.csv', 'a', newline='', encoding="utf-8") as file:
         writer = csv.writer(file)
     
@@ -143,7 +153,7 @@ def page_scraper(page_name):
         pos2 = page_text.find("</title>")
         title = page_text[pos1:pos2]
         pos1 = title.find("Show #")+6
-        show_num = title[pos1:pos1+4]
+        show_num = cleaner(title[pos1:pos1+4])
         pos2 = title.find("aired ")+6
         airdate = title[pos2:pos2+10]
 
@@ -153,45 +163,68 @@ def page_scraper(page_name):
         
         offset = 0 #we will save all 12 categories to the list; first questions of double jeopardy will then be 6th on list
         round_name = "Jeopardy"
+
+        if(airdate = 
+
+        
         for round in range(2):
             
             for i in range(6):
                 pos1 = page_text.find("category_name")+len("category_name")+2
                 page_text = page_text[pos1:]
                 pos2 = page_text.find("</td>")
+                #print(page_text[:pos2])
                 category_list.append(remove_html(page_text[:pos2]))
 
+            #<td class=\"clue\">\n
+
+            if (airdate[:4] > 2001) or (airdate[:4] > 2000 and airdate[6:8]>10):
+                
+            
+            #value = int(i/6)*100*is_dj*is_new 
             
             for i in range(30):
-                daily_double = 0
-                pos1 = page_text.find("clue_value")+len("clue_value")+3
-                if(pos1 > page_text.find("clue_value_daily_double") and page_text.find("clue_value_daily_double") > 0):
-                    pos1 = page_text.find("clue_value_daily_double")+len("clue_value_daily_double")+7
-                    daily_double = 1
-                        
-                page_text = page_text[pos1:]
-                pos2 = page_text.find("</td>")
                 
-                if daily_double == 1:
-                    if i % 6 == 0:
-                        if round_name == "Jeopardy":
-                            value = int(value)+200
-                        else:
-                            value = int(value)+400
+                #print(str(remove_spaces(page_text).find("<tdclass=\"clue\">\n</td>")) +" "+ str(remove_spaces(page_text).find("<tdclass=\"clue\">")))
+                if((remove_spaces(page_text).find("<tdclass=\"clue\">\n</td>") == remove_spaces(page_text).find("<tdclass=\"clue\">")) and remove_spaces(page_text).find("<tdclass=\"clue\">\n</td>")>-1):
+                    #print("found on "+str(i))
+                    question = "[BLANK]"
+                    answer = "[BLANK]"
+                    page_text = page_text[page_text.find("<td class=\"clue\">"):]
+                    page_text = page_text[page_text.find("</td>"):]
+                    
                 else:
-                    value = page_text[:pos2]
                 
-                pos1 = page_text.find("clue_text")+len("clue_text")+2
-                page_text = page_text[pos1:]
-                pos2 = page_text.find("</td>")
-                question = page_text[:pos2]
-                question = remove_html(question)
-    
-                pos1 = page_text.find("correct_response")+len("correct_response")+2
-                page_text = page_text[pos1:]
-                pos2 = page_text.find("</em>")
-                answer = page_text[:pos2]
-                answer = remove_html(answer)
+                    daily_double = 0
+                    pos1 = page_text.find("clue_value")+len("clue_value")+3
+                    if(pos1 > page_text.find("clue_value_daily_double") and page_text.find("clue_value_daily_double") > 0):
+                        pos1 = page_text.find("clue_value_daily_double")+len("clue_value_daily_double")+7
+                        daily_double = 1
+                            
+                    page_text = page_text[pos1:]
+                    pos2 = page_text.find("</td>")
+                    
+                    if daily_double == 1:
+                        if i % 6 == 0:
+                            if round_name == "Jeopardy":
+                                value = int(value)+200
+                            else:
+                                value = int(value)+400
+                    else:
+                        value = page_text[:pos2]
+                    
+                    pos1 = page_text.find("clue_text")+len("clue_text")+2
+                    page_text = page_text[pos1:]
+                    pos2 = page_text.find("</td>")
+                    question = page_text[:pos2]
+                    question = remove_html(question)
+                       
+                    pos1 = page_text.find("correct_response")+len("correct_response")+2
+                    page_text = page_text[pos1:]
+                    pos2 = page_text.find("</em>")
+                    answer = page_text[:pos2]
+                    #print(answer)
+                    answer = remove_html(answer)
                 
                 writer.writerow([show_num, airdate, round_name, category_list[(i%6)+offset], value , question, answer])
             if round == 1:
@@ -224,30 +257,51 @@ def page_scraper(page_name):
         pos2 = page_text.find("</em>")
         answer = page_text[:pos2]
         answer = remove_html(answer)
+        
 
-        value = "final" #maybe make higher number when turning to df, like 3000 or 4000
+        value = "Final" #maybe make higher number when turning to df, like 3000 or 4000
         
             
         writer.writerow([show_num, airdate, round_name, category_list[12], value , question, answer])
+        
+
+
 
 #uses other function to scrape multiple pages
 def site_scraper(start, end):
     for page_num in range(start, end):
         print(page_num)
         page_scraper("https://j-archive.com/showgame.php?game_id="+str(page_num))
-        time.sleep(1)
+        time.sleep(20)
+
+#each show should have 61 questions; checks where a show starts and isnt divisible by 61 to find an error
+def check_errors():
+    with open('new_dataset.csv', 'r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip header if present
+        count = 1
+        for row in reader:
+            if row[2] == 'Final Jeopardy' and not(count%61 == 0):
+                print(count)
+
+            count+=1
+    
+    
 
 if __name__ == '__main__':
 
-    with open('new_dataset.csv', 'w', newline='', encoding="utf-8") as file:
-        writer = csv.writer(file)
-        writer.writerow(["show #", "airdate","round","category","value", "question","answer"])
-        
     
     #page_scraper("https://j-archive.com/showgame.php?game_id=9322")
     #site_scraper(9317,9322)
-    site_scraper(100,110)
-    
+
+    #check_errors()
+    site_scraper(301,400)
+
+    '''
+    with open('new_dataset.csv', 'a', newline='', encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["show #", "airdate","round","category","value", "question","answer"])
+    '''
     '''
     df = hf_dataframe()
 
