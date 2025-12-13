@@ -143,7 +143,7 @@ def page_scraper(page_name):
     if page_text == -1:
         return -1
     
-    with open('new_dataset.csv', 'a', newline='', encoding="utf-8") as file:
+    with open('dataset_oops.csv', 'a', newline='', encoding="utf-8") as file:
         writer = csv.writer(file)
     
         category_list = [] #always 6 long (for single and double, final is just 1 category)
@@ -164,8 +164,14 @@ def page_scraper(page_name):
         offset = 0 #we will save all 12 categories to the list; first questions of double jeopardy will then be 6th on list
         round_name = "Jeopardy"
 
-        if(airdate = 
+        #multiplies by 2 for double jeopardy round.
+        dj_mult=1
 
+        '''
+        print(airdate[:4])
+        print(airdate[5:7])
+        print(airdate[8:10])
+        '''
         
         for round in range(2):
             
@@ -178,13 +184,16 @@ def page_scraper(page_name):
 
             #<td class=\"clue\">\n
 
-            if (airdate[:4] > 2001) or (airdate[:4] > 2000 and airdate[6:8]>10):
+            new_mult = 1
+            #on November 26 2002 they permanently doubled every question value
+            if (int(airdate[:4]) > 2001) or (int(airdate[:4]) == 2001 and int(airdate[5:7])>10 and int(airdate[8:10])>25):
+                new_mult = 2
                 
             
-            #value = int(i/6)*100*is_dj*is_new 
+            
             
             for i in range(30):
-                
+                value = (int(i/6)+1)*100*dj_mult*new_mult 
                 #print(str(remove_spaces(page_text).find("<tdclass=\"clue\">\n</td>")) +" "+ str(remove_spaces(page_text).find("<tdclass=\"clue\">")))
                 if((remove_spaces(page_text).find("<tdclass=\"clue\">\n</td>") == remove_spaces(page_text).find("<tdclass=\"clue\">")) and remove_spaces(page_text).find("<tdclass=\"clue\">\n</td>")>-1):
                     #print("found on "+str(i))
@@ -192,9 +201,11 @@ def page_scraper(page_name):
                     answer = "[BLANK]"
                     page_text = page_text[page_text.find("<td class=\"clue\">"):]
                     page_text = page_text[page_text.find("</td>"):]
-                    
-                else:
+
                 
+                
+                else:
+                    '''
                     daily_double = 0
                     pos1 = page_text.find("clue_value")+len("clue_value")+3
                     if(pos1 > page_text.find("clue_value_daily_double") and page_text.find("clue_value_daily_double") > 0):
@@ -212,6 +223,9 @@ def page_scraper(page_name):
                                 value = int(value)+400
                     else:
                         value = page_text[:pos2]
+                    '''
+
+                    
                     
                     pos1 = page_text.find("clue_text")+len("clue_text")+2
                     page_text = page_text[pos1:]
@@ -234,6 +248,7 @@ def page_scraper(page_name):
             pos1 = page_text.find("double_jeopardy_round")
             page_text = page_text[pos1:]
             offset = 6
+            dj_mult=2
 
         round_name = "Final Jeopardy"
         pos1 = page_text.find("final_jeopardy_round")
@@ -272,7 +287,7 @@ def site_scraper(start, end):
     for page_num in range(start, end):
         print(page_num)
         page_scraper("https://j-archive.com/showgame.php?game_id="+str(page_num))
-        time.sleep(20)
+        time.sleep(5)
 
 #each show should have 61 questions; checks where a show starts and isnt divisible by 61 to find an error
 def check_errors():
@@ -286,6 +301,59 @@ def check_errors():
 
             count+=1
     
+def check_duplicates(fname):
+    
+    df = pd.read_csv(fname)
+    duplicates=df.duplicated(keep=False)
+    num = duplicates.sum()
+    #print(num)
+    df2 = df[duplicates]
+    print(df2.head(200))
+    
+    num_unique = df.drop_duplicates().shape[0]
+    print("Number of unique rows:", num_unique)
+
+    print(df.shape)
+
+def check_num_questions(fname):
+
+    dict = {}
+    
+    with open(fname, 'r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        next(reader)
+        for row in reader:
+            if not( str(row[0]) in dict):
+                dict[str(row[0])]=1
+            else:
+                dict[str(row[0])]+=1
+    return dict
+
+#381800 182818
+
+def create_final_dataset():
+    with open('final_dataset.csv', 'w', newline='', encoding="utf-8") as file:
+        writer = csv.writer(file)
+        with open('new_dataset.csv', 'r', encoding='utf-8') as file:
+            reader = list(csv.reader(file))
+            for i in range(0,182878):
+                writer.writerow(reader[i])
+            for j in range(282370,len(reader)):
+                writer.writerow(reader[j])
+
+def create_edited_dataset():
+    count = 0
+    with open('final_dataset_clean.csv', 'a', newline='', encoding="utf-8") as file:
+        writer = csv.writer(file)
+        with open('final_dataset2.csv', 'r', encoding='utf-8') as file:
+            reader = list(csv.reader(file))
+            for row in reader:
+                if not(row[5]=='[BLANK]'):
+                    writer.writerow(row)
+                    count+=1
+                    print(count)
+    
+    
     
 
 if __name__ == '__main__':
@@ -295,13 +363,31 @@ if __name__ == '__main__':
     #site_scraper(9317,9322)
 
     #check_errors()
-    site_scraper(301,400)
-
+    
+    #check_duplicates("final_dataset.csv")
     '''
-    with open('new_dataset.csv', 'a', newline='', encoding="utf-8") as file:
+    dict = check_num_questions("final_dataset.csv")
+    print(dict)
+    for key in dict:
+        if dict[key] != 61:
+            print(key)
+    '''
+    create_edited_dataset()
+    
+    
+    #print(len(check_num_questions('new_dataset.csv')))
+    #print(check_num_questions('final_dataset.csv'))
+
+    #create_final_dataset()
+    
+    '''
+    with open('dataset_oops.csv', 'w', newline='', encoding="utf-8") as file:
         writer = csv.writer(file)
         writer.writerow(["show #", "airdate","round","category","value", "question","answer"])
     '''
+    
+    #site_scraper(5000,4999)
+    
     '''
     df = hf_dataframe()
 
