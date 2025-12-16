@@ -1,5 +1,44 @@
 # ml_final_Jake_and_Jack
 
+
+
+## Overview
+Brief (roughly one paragraph) overview of your project, including its aims and the main findings/outcome (at a high level)
+
+The final aim of our project was to examine whether or not jeopardy questions have changed in difficulty over time. For the first two phases of our project, we used an existing jeopardy question set from hugging face. We ran and trained a distilbert model on questions containing an answer from the 20 most common answers. However, this only translated to approximately 3000 entries. For our final phase, we wanted a better dataset and to train our distilbert model on a much larger set of questions. We made our own jeopardy question dataset, which was achieved by scraping a jeopardy archive site. Out of this massive dataset, we decided on using questions containing answers in the 300 most common. This translated to a little under 50,000 entries. We split these entries into 4 ~10 year time periods, and wanted to see what period the distilbert model would have the highest accuracy on. To run the distilbert model on a set this large, we had to use Colgate's supercomputer services. We tweaked the model's settings until we found what we thought to be an optimal number of epochs, which was 4. For each time period, the model achieved signifcantly better than random chance (1/300). We found that the model was able to perform at slightly over 50% accuracy for the first, second, and fourth time periods and a little under 50% accuracy for the third time period. Since these results were relatively consistent, we did not conclude that the difficulty of jeopardy questions has changed over time, but rather stayed relatively similar. 
+
+## Replication Instructions
+
+In order to replicate the results we have in our poster, you would need to use our final dataset, 'final_dataset_clean.csv'
+- This dataset was built by scraping j-archive.com
+- You would then need to create a new dataframe containing only questions containing an answer in the 300 most common
+- From this dataframe, you would separate questions based on year. There were 4 ~10 year time periods we used: 1984-1995, 1996-2005, 2006-2015, 2016-2025.
+- Once you have the entries separated into these categories, you want to train our distilbert model with the provided settings using 4 epochs. (as a note, we needed to connect to Colgate's supercomputer to run our distilbert model)
+- Then you test the trained distilbert model on the testing data, using accuracy as the metric
+  
+## Future Directions
+
+Brief (roughly one paragraph) overview of next steps/ways to improve on/concrete extensions of your project
+
+I think that we could expand the model to have a certainty metric in each question that it answers. This could be a probability between 0 and 1, which we could achieve through the use of a softmaxing function. There are also other categories that we could examine to see if they have any effect on the performance of the model. These could be question category, and the prevalence of a questions answer across jeopardy as a whole. Since we focused on training the model solely on questions with answers that were very prevalent in the dataset, we could see how the model performs on questions with answers that were much less prevalent. This would decrease the model's accuracy by a lot, and probably be out of the scope of the class to build a model that can answer questions like this, but nevertheless, it would be very interesting to try to build a model that can answer niche questions. 
+
+## Contributions
+Details on the contributions of each member to the project, including time spent (if a group of one you should still do this)
+
+Jack
+- Built initial BERT model and ran it to get results for phase 2
+- Data analysis on final question set for context in our poster/presentation
+- Worked on poster
+
+  A significant amount of time was spent building and running our first BERT model. Around 7-8 hours (across several sessions). Also spent ~2 hours on data analysis. Work on poster probably totaled 1-2 hours. 
+
+Jake
+## add
+
+
+## everything below this point is from earlier stages of the project, we can probably delete it
+
+
 ## Project roadmap going forward
 
 -Find existing NLP classification models that will allow us to sort questions and answers into predefined categories. 
