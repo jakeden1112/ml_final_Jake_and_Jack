@@ -13,6 +13,9 @@ def hf_dataframe():
     df = pd.read_json("hf://datasets/openaccess-ai-collective/jeopardy/data/train.jsonl", lines=True)
     return df
 
+def our_dataframe():
+    df = pd.read_csv("final_dataset_clean_standardized.csv",low_memory=False)
+    return df
 
 
 def cleaner(text):
@@ -143,9 +146,9 @@ def page_scraper(page_name):
     if page_text == -1:
         return -1
     
-    with open('dataset_oops.csv', 'a', newline='', encoding="utf-8") as file:
+    with open('dataset_new.csv', 'w', newline='', encoding="utf-8") as file:
         writer = csv.writer(file)
-    
+        writer.writerow(["show #", "airdate","round","category","value", "question","answer"])
         category_list = [] #always 6 long (for single and double, final is just 1 category)
 
         #gets show # and airdate from the title of the html page
@@ -167,11 +170,6 @@ def page_scraper(page_name):
         #multiplies by 2 for double jeopardy round.
         dj_mult=1
 
-        '''
-        print(airdate[:4])
-        print(airdate[5:7])
-        print(airdate[8:10])
-        '''
         
         for round in range(2):
             
@@ -204,28 +202,7 @@ def page_scraper(page_name):
 
                 
                 
-                else:
-                    '''
-                    daily_double = 0
-                    pos1 = page_text.find("clue_value")+len("clue_value")+3
-                    if(pos1 > page_text.find("clue_value_daily_double") and page_text.find("clue_value_daily_double") > 0):
-                        pos1 = page_text.find("clue_value_daily_double")+len("clue_value_daily_double")+7
-                        daily_double = 1
-                            
-                    page_text = page_text[pos1:]
-                    pos2 = page_text.find("</td>")
-                    
-                    if daily_double == 1:
-                        if i % 6 == 0:
-                            if round_name == "Jeopardy":
-                                value = int(value)+200
-                            else:
-                                value = int(value)+400
-                    else:
-                        value = page_text[:pos2]
-                    '''
-
-                    
+                else:             
                     
                     pos1 = page_text.find("clue_text")+len("clue_text")+2
                     page_text = page_text[pos1:]
@@ -274,7 +251,7 @@ def page_scraper(page_name):
         answer = remove_html(answer)
         
 
-        value = "Final" #maybe make higher number when turning to df, like 3000 or 4000
+        value = "Final" 
         
             
         writer.writerow([show_num, airdate, round_name, category_list[12], value , question, answer])
@@ -282,7 +259,7 @@ def page_scraper(page_name):
 
 
 
-#uses other function to scrape multiple pages
+#uses page_scraper to scrape multiple pages
 def site_scraper(start, end):
     for page_num in range(start, end):
         print(page_num)
@@ -329,8 +306,8 @@ def check_num_questions(fname):
                 dict[str(row[0])]+=1
     return dict
 
-#381800 182818
 
+#made because there was an error with the new dataset having repeats
 def create_final_dataset():
     with open('final_dataset.csv', 'w', newline='', encoding="utf-8") as file:
         writer = csv.writer(file)
@@ -341,6 +318,7 @@ def create_final_dataset():
             for j in range(282370,len(reader)):
                 writer.writerow(reader[j])
 
+#gets rid of all of the unanswered questions
 def create_edited_dataset():
     count = 0
     with open('final_dataset_clean.csv', 'a', newline='', encoding="utf-8") as file:
@@ -352,92 +330,58 @@ def create_edited_dataset():
                     writer.writerow(row)
                     count+=1
                     print(count)
+
+#in 2001 every question value was doubled; this is to make them the same (first question asked is always 200)
+def create_standardized_dataset():
+    
+    with open('final_dataset_clean_standardized.csv', 'w', newline='', encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["show #", "airdate","round","category","value", "question","answer"])
+        with open('final_dataset_clean.csv', 'r', encoding='utf-8') as file:
+            reader = csv.reader(file)
+            next(reader)
+            for row in reader:
+                airdate = str(row[1])
+                if (int(airdate[:4]) > 2001) or (int(airdate[:4]) == 2001 and int(airdate[5:7])>10 and int(airdate[8:10])>25) or row[4] == 'Final':
+                    writer.writerow(row)
+                else:
+                    row[4] = int(row[4])*2
+                    writer.writerow(row)
+                    
+                    
+
+def make_year_df(df, year):
+    #splits into a dataframe based on a set of years
+    new_df = pd.DataFrame(columns=["show #", "airdate","round","category","value", "question","answer"])
+    
+    shift = 0
+    if(year == 1986):
+        #starts it at 1984 (makes the sections more even because there were fewer shows in the first 10 years or so)
+        shift = 2 
+    
+    for i in range(year-shift, year+10):
+        temp_df = df[df["airdate"].str.contains(str(i))]
+        new_df = pd.concat([new_df,temp_df])
+
+    return new_df
+    
+
+def make_value_df(df, value, round): #uses new values starting at $200
+    new_df = pd.DataFrame(columns=["show #", "airdate","round","category","value", "question","answer"])
     
     
+    temp_df = df[(df["value"].astype(str) == (str(value))) & (df["round"].astype(str) == (str(round)))]
+    new_df = pd.concat([new_df,temp_df])
+
+    return new_df
     
 
 if __name__ == '__main__':
-
-    
-    #page_scraper("https://j-archive.com/showgame.php?game_id=9322")
-    #site_scraper(9317,9322)
-
-    #check_errors()
-    
-    #check_duplicates("final_dataset.csv")
-    '''
-    dict = check_num_questions("final_dataset.csv")
-    print(dict)
-    for key in dict:
-        if dict[key] != 61:
-            print(key)
-    '''
-    create_edited_dataset()
+    #This file contains various functions that we used throughout the project to create and manipulate the dataset
     
     
-    #print(len(check_num_questions('new_dataset.csv')))
-    #print(check_num_questions('final_dataset.csv'))
-
-    #create_final_dataset()
+    site_scraper(0,100)
     
-    '''
-    with open('dataset_oops.csv', 'w', newline='', encoding="utf-8") as file:
-        writer = csv.writer(file)
-        writer.writerow(["show #", "airdate","round","category","value", "question","answer"])
-    '''
-    
-    #site_scraper(5000,4999)
-    
-    '''
-    df = hf_dataframe()
-
-    print(df['answer'].count())
-    print(df['answer'].nunique())
-    
-    #print(df.head(20))
-    
-    qa = df[["question","answer"]]
-    
-    #print(qa.head(20))
-    
-    test = qa.loc[0,"question"]
-    
-    print(test)
-
-    print(cleaner(test))
-
-    qa_clean = qa.map(cleaner)
-
-    #print(qa_clean.head(20))
-
-    #answer_dict = answer_dict_maker(qa_clean, 'answer')
-    
-    #dict_to_csv(answer_dict, 'answer_occurences.csv')
-
-    basket, test_dict  = create_basket('Answer_occurences.csv',5,20000)
-
-    print(test_dict)
-    print(len(test_dict))
-    print(len(basket))
-    
-
-    
-    
-    
-    #occ_dict = occ_dict_maker(qa_clean,'question')
-    #print(occ_dict)
-    
-    #dict_to_csv(occ_dict, 'word_occurences.csv')
-    
-    basket, test_dict  = create_basket('word_occurences.csv',30,500)
-    
-    #print(test_dict)
-    print(len(test_dict))
-    print(len(basket))
-    '''
-    
-    
-    print("done")
 
 
 

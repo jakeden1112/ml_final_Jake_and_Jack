@@ -3,24 +3,45 @@
 
 
 ## Overview
-Brief (roughly one paragraph) overview of your project, including its aims and the main findings/outcome (at a high level)
 
-The final aim of our project was to examine whether or not jeopardy questions have changed in difficulty over time. For the first two phases of our project, we used an existing jeopardy question set from hugging face. We ran and trained a distilbert model on questions containing an answer from the 20 most common answers. However, this only translated to approximately 3000 entries. For our final phase, we wanted a better dataset and to train our distilbert model on a much larger set of questions. We made our own jeopardy question dataset, which was achieved by scraping a jeopardy archive site. Out of this massive dataset, we decided on using questions containing answers in the 300 most common. This translated to a little under 50,000 entries. We split these entries into 4 ~10 year time periods, and wanted to see what period the distilbert model would have the highest accuracy on. To run the distilbert model on a set this large, we had to use Colgate's supercomputer services. We tweaked the model's settings until we found what we thought to be an optimal number of epochs, which was 4. For each time period, the model achieved signifcantly better than random chance (1/300). We found that the model was able to perform at slightly over 50% accuracy for the first, second, and fourth time periods and a little under 50% accuracy for the third time period. Since these results were relatively consistent, we did not conclude that the difficulty of jeopardy questions has changed over time, but rather stayed relatively similar. 
+The final aim of our project was to examine whether or not jeopardy questions have changed in difficulty over time. For the first two phases of our project, we used an existing jeopardy question set from hugging face. We ran and trained a distilbert model on questions containing an answer from the 20 most common answers. However, this only translated to approximately 3000 entries. For our final phase, we wanted a better dataset and to train our distilbert model on a much larger set of questions. We made our own jeopardy question dataset, which was achieved by scraping the website j-archive.com. Out of this massive dataset, we decided on using questions containing answers in the 300 most common, as these almost all contained at least 100 each. This translated to a little under 50,000 entries. We split these entries into 4 ~10 year time periods, and wanted to see what period the distilbert model would have the highest accuracy on. We tweaked the model's settings until we found what we thought to be an optimal number of epochs, which was 4. For each time period, the model achieved significantly better than random chance (1/300). We found that the model was able to perform at close to 50% accuracy for the four time periods. We determined that accuracy would give us a proper measure of difficulty, as we observed a noticeable downward trend in accuracy as question value increased. The show is structured so that questions of greater dollar value are more difficult, so this correlation makes sense. We then averaged out the questions over the time periods and measured the accuracy of each. While the 4 time periods could be said to show a slight decreasing trend in accuracy, we were not convinced that it was enough of a trend to say that the questions had truly become more difficult overall. If we interpret it that the questions have stayed relatively similar in difficulty, this is a good outcome, as it shows the writing on the show has been consistent.
 
 ## Replication Instructions
 
-In order to replicate the results we have in our poster, you would need to use our final dataset, 'final_dataset_clean.csv'
-- This dataset was built by scraping j-archive.com
-- You would then need to create a new dataframe containing only questions containing an answer in the 300 most common
-- From this dataframe, you would separate questions based on year. There were 4 ~10 year time periods we used: 1984-1995, 1996-2005, 2006-2015, 2016-2025.
-- Once you have the entries separated into these categories, you want to train our distilbert model with the provided settings using 4 epochs. (as a note, we needed to connect to Colgate's supercomputer to run our distilbert model)
-- Then you test the trained distilbert model on the testing data, using accuracy as the metric
+In order to replicate the results we have in our poster, you would need to use our final dataset, 'final_dataset_clean_standardized.csv'
+Note: We used the nlp environment in turing to run some of the programs, so they might not work as well in the ml environment
+
+### To build the dataset
+
+- Use the functions in scraper.py to scrape j-archive.com.
+- You can use the site_scraper function to enter the starting and ending page you want.
+    - A call to site scraper loops through all of the given pages and sends each page number to page_scraper which then scrapes the page with that number. Every page has the same address except followed by a different number which serves as the id of the show. site_scraper waits a little before going on to the next page to avoid overwhelming j-archive's servers.
+- Take note of which csv file the function is writing to and if you don't want to have to start over each time change the 'w' in the write function to 'a' for append.
+    - We didn't make the dataset all in one go, so we had to append as to not lose what we had already scraped.
+- page_scraper can run on most pages, as they all have pretty much the same structure of html. However, there were a few pages that were giving us trouble for which we had to go into the function and make temporary changes.
+    - For example, one head scratcher of an issue involved an exception being thrown after page_scraper called the remove_html function. What turned out to be happening was the question contained a '<' character, so when it was put into the remove_html function, it didnt see the '<' matched with a '>' so it went into an infinite loop, since the remove_html function finds the '<' and '>' of an html tag and removes them and everything inside of them, granted each '<' is paired with a '>'. To fix this, we could have made remove_html more robust or taken the html junk into the csv and then run the function on the whole dataset later.
+- When we made the dataset, we had the program running in many separate instances, some locally and others remotely through turing. This meant that multiple csv files were made and then manually concatenated. In theory, you could make a similar dataset just by running it once, though, barring any hiccups caused by broken pages or strange formatting.
+- We used create_edited_dataset to take out all of the blank questions.
+    - If a question was not read on the show due to time running out, they would not save it to j-archive as no one has any record as to what it was. We saved these questions as the page_scraper function treats every page the same (as in there are 61 questions always). While the blank questions might be helpful for a dataset used to keep record of questions, it is not helpful at all for training a model. 
+- We used create_standardized_dataset to double older dollar values too keep things standard
+    - In 2001 every question was doubled. Before then, the first question of the first round would be 100 and the second 200. After they changed it in 2001, the same levels of questions would be 200 and 400 respectively. We did this so we could analyze questions based on dollar value without having to account for this change. There shouldn't be a difference in difficulty after the dollar values were doubled, it was just done to keep up with economic factors.
+ 
+### Training the model
+
+- Training was done with run_bert.py, testing was done with test_bert.py
+- First you create the df_filtered dataframe, which contains the 300 most commonly occurring questions. You get this by taking the top 300, cleaning them using the cleaner function from scraper (removes any punctuation, makes all lowercase, etc.) and then making the answers into labels that BERT can interpret.
+- You can then separate based on time period using create_years_list and separate each time period into values using create_vals_list
+    - There were 4 ~10 year time periods we used: 1984-1995, 1996-2005, 2006-2015, 2016-2025. We extended the first range to account for the fact that there were fewer shows in the first few years. In retrospect, this split might have not been the best as it made the whole dataset roughly even, but when turned into the top 300, it might have got a little too unbalanced. This might have affected accuracy of the test data, and contributed to us questioning the slightly higher accuracy of the earlier years.
+    - We wanted to split the dataset into these groups before training to make sure the train test split had roughly the same number from each year range and each value within each year range. 
+- You can then work backwards, combining the values dataset into datasets for the 4 year ranges and then those 4 into one big dataset using create_year_dataset_dict and create_full_vals_dataset_dict. You can then use the new concatenated train split to train the dataset.
+    - This method might have not been the best, but it allowed us to get pretty evenly distributed datasets for testing that we wouldn't have gotten had we split the original df_filtered into train and test and then split up the test, as the original split probably wouldn't have split up the other factors evenly.
+- We use the large train dataset to train a DistilBERT model for 4 epochs.
+- Then you test the trained distilbert model on the various subdatasets we made, using accuracy as the metric
   
 ## Future Directions
 
-Brief (roughly one paragraph) overview of next steps/ways to improve on/concrete extensions of your project
 
-I think that we could expand the model to have a certainty metric in each question that it answers. This could be a probability between 0 and 1, which we could achieve through the use of a softmaxing function. There are also other categories that we could examine to see if they have any effect on the performance of the model. These could be question category, and the prevalence of a questions answer across jeopardy as a whole. Since we focused on training the model solely on questions with answers that were very prevalent in the dataset, we could see how the model performs on questions with answers that were much less prevalent. This would decrease the model's accuracy by a lot, and probably be out of the scope of the class to build a model that can answer questions like this, but nevertheless, it would be very interesting to try to build a model that can answer niche questions. 
+It would be good to make further changes to control for external variable that might be affecting the outcome of the experiment. For example, even using the top 300, the most prevalent answers showed up much more than the least prevalent with the top showing up around 500 and the bottom around 100. Capping them all at around 100 would make the model perform worse, but it would make the experiment more controlled. In terms of extending the project, we could expand the model to have a certainty metric in each question that it answers. This could be a probability between 0 and 1, which we could achieve through the use of a softmaxing function. We could then use this to measure the models performance on a simulated jeopardy show, where it only buzzes in to questions that pass a certain level of certainty. Like a contestant on the show, the model would not need to know the answer to every question to do well, rather it would just have to know when it will be right and when it will be wrong to end up netting a positive sum. There are also other factors that we could examine to see if they have any effect on the performance of the model. These could be question category, and the prevalence of a question's answer across jeopardy as a whole. Since we focused on training the model solely on questions with answers that were very prevalent in the dataset, we could see how the model performs on questions with answers that were much less prevalent. This would decrease the model's accuracy by a lot, but we could help to improve it by creating new questions for training based on lesser represented questions.
 
 ## Contributions
 Details on the contributions of each member to the project, including time spent (if a group of one you should still do this)
@@ -33,79 +54,12 @@ Jack
   A significant amount of time was spent building and running our first BERT model. Around 7-8 hours (across several sessions). Also spent ~2 hours on data analysis. Work on poster probably totaled 1-2 hours. 
 
 Jake
-## add
+- Wrote scraper functions to compile dataset and ran them
+- Wrote functions to turn dataset into train and test data for BERT model
+- Made graphs based on accuracy of test data
+- Worked on poster
 
+ Spent way too much time tweaking functions and compiling dataset, maybe around 10-12 hours across multiple days (minus the time waiting for the scraping to happen), although a lot of it was spent debugging, double checking, and redoing things that got messed up, so it shouldn't have taken so long. Spent maybe 5-6 hours working on getting dataset split up properly and maybe 1-2 hours making graphs. Poster probably tooke 1-2 hours. I don't know if these times are accurate. I spent most of the time being a dum dum staring at error messages.
+ 
 
-## everything below this point is from earlier stages of the project, we can probably delete it
-
-
-## Project roadmap going forward
-
--Find existing NLP classification models that will allow us to sort questions and answers into predefined categories. 
--apply different models (possibly BERT), make sure to cite sources of models 
--Be able to have model answer SOME questions.
-
-meeting notes
--online tutorials for fine tuning bert
-- 
-
-## Goal for first milestone
-
-Note: We will refer to what the host reads as the question and what the contestant says in response as the answer to avoid confusion
-
-We want to start off by getting a feel for manipulating the data and then applying a simple model on it to see if we can get any sort of result. We are using a dataset of Jeopardy quesions from Huggingface to start off, although in the future, we plan to scrape our own dataset, since on the website J Archive there is listed over 500,000 Jeopardy questions, while the Huggingface dataset has less than 300,000 entries. 
-
-## Rationale
-
-Rather than just throw all of the data from the dataset into a model and see what happens, we were thoughtful in which questions from the dataset we used and how they are represented. We decided to use one hot encoding with whether or not each word is present being a feature. We had to make some choices to not have very large vectors. We took out words that are super common because they won't add much information and they might confuse the model. 
-For example: consider this question and answer Q:'The section of this river near London Bridge is called the Pool' A:'The Thames' We should not have the words 'the,' 'of,' 'this,' 'is' being given the same weight (or any weight at all) as 'river,' 'bridge,' 'London,' 'pool.' We also got rid of words that are super uncommon, since if a word only shows up in one or two questions, it won't be very useful for predicting answers to unseen questions, since it is unlikely to show up again and it doesn't affect the training very much. We have also taken out answers that only appear a few times because if there aren't enough instances of them, the model won't get much of a sense of them while training and will have a hard time knowing what to look for if it shows up when we test the model.
-
-## What we did
-
-We made two files, scraper.py and model.py. scraper.py will eventually include scraping methods, but for now we have just included methods to clean a dataset, since we are using hugging face for now. model.py is being used to turn the data into X vectors and y values and then putting them into a model.
-
-## Summary of functions
-
-#### hf_dataframe():
-Returns a dataframe of the huggingface dataset
-
-#### cleaner(text):
-Takes text and cleans it. Uses regular expression to remove any non alphanumeric symbols, makes lower case, and tries to remove all instances of multiple spaces
-
-#### occ_dict_maker (df, column):
-Makes a dictionary of unique words used in questions and the amount of times they occur. 
-
-#### answer_dict_maker(df, column):
-Gives us the occurences of different answers. Unlike occ_dict_maker, it puts the whole string into the dictionary. The idea is that we want to count how many answers are repaeated. If an answer is only used once or a few times, than we shouldn't train it on it because it is unlikely to be seen again. We want to only train on answers that are given somewhat often so that the model will be able to have enough instances to learn off of.
-
-#### dict_to_csv (occ_dict, fname):
-Saves the dictionary to a csv file that we can easily read off of to avoid the computational cost of making dictionaries every time.
-
-#### create_basket (fname, low_bound, up_bound):
-This creates our basket of words. We are currently using one hot encoding to have an binary representation for each word if it is present or not in a question. The list basket_list is a representation of the mapping of which words will be repersented by which index of the basket in a vector. output_dict is just fetching the dictionary of occurences that we had previously stored. We use the upper and lower bounds as culling the words down so we don't have words that will throw the model off. We also have it remove words that are less than 3 letters, as these are unlikely to contain much information (we might change this, since it was mainly added to account for a problem which was fixed)
-
-#### find_good_questions(df, ans_list, fname):
-This is just to make a csv file that will have the questions that we want to use (where the answer is well represented in the dataset), so we don't have to check if a question has an answer is in the answer set each time we make a vector
-
-    
-#### retrieve_good_qs(fname):
-Gets a list of questions we will use out of the csv file
-    
-## What we are doing in model.py
-
-We load in the Huggingface dataset and then make qa, which is a dataframe of just the questions and answers. We then clean qa out using the function in scraper.py. Then we load in all of the lists and dictionaries we'll need. We make two lists that will be lists of lists of for our X vectors and y values. We loop through the questions we have decided are good to use, marking 1 in a vector if a certain word shows up and then putting the vectors in a list of X vectors and their associated y values in a list. We then turn these lists of lists into numpy arrays that we can then split into training and test data. We then train knn with the training data and test it with the test data to get an accuracy.
-
-## How does it look?
-
-We have been tweaking the amount of data used as well as the k value. We have been getting accuracy levels that are pretty low, but that is to be expected when we are using such a simple model on such a hard problem. 
-
-As expected, increasing the k value decreases the accuracy. Jeopardy questions and answers are very imbalanced/unique. 
-
-using 20000 samples and a k of 1 Accuracy: 0.0375 
-using 20000 samples and a k of 2 Accuracy: 0.02075
-using 20000 samples and a k of 3 Accuracy: 0.01975
-
-## What's next?
-
-We would like to try running on Turing using a job since using too many vectors can cause the computer to crash. We want to try other models that are more advanced, like neual nets. We want to scrape our own larger dataset from the J Archive website and use more advanced cleaning techniques. We have also been thinking about our methods of choosing which words to keep in the representation. We have thought about using a dictionary and maybe prioritizing certain words (such as proper nouns).
 
